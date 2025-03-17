@@ -17,7 +17,7 @@
 import wx
 import wx.lib.scrolledpanel as scrolled
 from music_manager import MIDIManager
-
+from testing_the_grid import PianoRollPanel
 
 
 
@@ -36,7 +36,6 @@ class DAWFrame(wx.Frame):
         self.Music_Player = MIDIManager()
 
         self.shift_start_time = False
-
 
         panel = wx.Panel(self)
         main_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -76,22 +75,21 @@ class DAWFrame(wx.Frame):
         get_data_button.Bind(wx.EVT_BUTTON, self.show_all_notes_terminal)
         play_button.Bind(wx.EVT_BUTTON, self.play_current_track)
 
-
         right_sizer.Add(controls_panel, 0, wx.EXPAND | wx.ALL, 5)
 
-        tracks_box = wx.StaticBox(right_panel, label="Tracks")
-        tracks_sizer = wx.StaticBoxSizer(tracks_box, wx.VERTICAL)
-
-        self.scroll_panel = scrolled.ScrolledPanel(right_panel, size=(-1, 300),
-                                                   style=wx.TAB_TRAVERSAL | wx.BORDER_SUNKEN)
-        self.scroll_panel.SetAutoLayout(1)
-        self.scroll_panel.SetupScrolling(scroll_x=False, scroll_y=True)
-
+        # Initialize scroll_panel and tracks_panel
+        self.scroll_panel = scrolled.ScrolledPanel(right_panel)
+        self.scroll_panel.SetupScrolling()
         self.tracks_panel = wx.BoxSizer(wx.VERTICAL)
         self.scroll_panel.SetSizer(self.tracks_panel)
 
-        tracks_sizer.Add(self.scroll_panel, 1, wx.EXPAND | wx.ALL, 5)
-        right_sizer.Add(tracks_sizer, 1, wx.EXPAND | wx.ALL, 5)
+        track_box = wx.StaticBox(self.scroll_panel, label="Tracks")
+        track_panel = wx.StaticBoxSizer(track_box, wx.HORIZONTAL)
+
+        track_roll = PianoRollPanel(self.scroll_panel, 10, 10)
+        track_panel.Add(track_roll, 1, wx.EXPAND | wx.ALL, 5)
+
+        right_sizer.Add(self.scroll_panel, 1, wx.EXPAND | wx.ALL, 5)
 
         track_buttons_panel = wx.Panel(right_panel)
         track_buttons_sizer = wx.BoxSizer(wx.HORIZONTAL)
