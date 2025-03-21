@@ -1,16 +1,19 @@
-import time
 import wx
+
 
 class PianoRollPanel(wx.Panel):
     def __init__(self, parent, num_notes, num_beats):
         super(PianoRollPanel, self).__init__(parent)
-        self.SetBackgroundColour(wx.Colour(50, 50, 50))
-        self.beat_width = 80
-        self.note_height = 20
-        self.num_beats = num_beats
-        self.num_notes = num_notes
-        self.delete_note = False
 
+        # set the background of the panel
+        self.SetBackgroundColour(wx.Colour(50, 50, 50))
+
+        #defines the dimensions
+        self.beat_width = 80 # width of each beat in pixels
+        self.note_height = 20 # height of each note measured in pixels
+        self.num_beats = num_beats # maximum number of beats in roll
+        self.num_notes = num_notes # maximum number of notes in the roll
+        self.parent = parent
 
 
 
@@ -22,17 +25,18 @@ class PianoRollPanel(wx.Panel):
         self.current_note = None
         self.SetDoubleBuffered(True)
 
+        # binds all the events to their corresponding method
         self.Bind(wx.EVT_PAINT, self.on_paint)
         self.Bind(wx.EVT_LEFT_DOWN, self.on_left_down)
         self.Bind(wx.EVT_LEFT_UP, self.on_left_up)
         self.Bind(wx.EVT_MOTION, self.on_motion)
         self.Bind(wx.EVT_SIZE, self.on_resize)
+        self.Bind(wx.EVT_RIGHT_DOWN, self.on_right_down)
 
 
     def on_paint(self, event):
         dc = wx.PaintDC(self)
         self.draw_piano_roll(dc)
-
 
     def draw_piano_roll(self, dc):
         dc.SetBrush(wx.Brush(wx.Colour(255, 255, 255)))
@@ -69,29 +73,35 @@ class PianoRollPanel(wx.Panel):
     def on_left_down(self, event):
         pos = event.GetPosition()
         # Check if clicking on an existing note to drag it
-        if self.delete_note == False:
-            for i, note in enumerate(self.notes):
-                start_beat, end_beat, pitch = note
-                x = 40 + start_beat * self.beat_width
-                y = (self.num_notes - pitch - 1) * self.note_height
-                width = (end_beat - start_beat) * self.beat_width
-                if x <= pos.x <= x + width and y <= pos.y <= y + self.note_height:
-                    self.dragging = True
-                    self.current_note = i
-                    break
-            else:
-                # Otherwise, add a new note at the clicked location
-                beat = (pos.x - 40) // self.beat_width
-                pitch = self.num_notes - (pos.y // self.note_height) - 1
-                if pos.x>40:
-                    self.notes.append((beat, beat + 1, pitch))
-                    self.current_note = len(self.notes) - 1
-                    self.dragging = True
+
+        for i, note in enumerate(self.notes):
+            start_beat, end_beat, pitch = note
+            x = 40 + start_beat * self.beat_width
+            y = (self.num_notes - pitch - 1) * self.note_height
+            width = (end_beat - start_beat) * self.beat_width
+            if x <= pos.x <= x + width and y <= pos.y <= y + self.note_height:
+                self.dragging = True
+                self.current_note = i
+                break
         else:
+            # Otherwise, add a new note at the clicked location
             beat = (pos.x - 40) // self.beat_width
             pitch = self.num_notes - (pos.y // self.note_height) - 1
-            if (beat, beat+1, pitch) in self.notes:
-                self.notes.remove((beat, beat+1, pitch))
+            if pos.x>40:
+                self.notes.append((beat, beat + 1, pitch))
+                self.current_note = len(self.notes) - 1
+                self.dragging = True
+
+        self.Refresh()
+
+    def on_right_down(self, event):
+        pos = event.GetPosition()
+
+        beat = (pos.x - 40) // self.beat_width
+        pitch = self.num_notes - (pos.y // self.note_height) - 1
+        if (beat, beat + 1, pitch) in self.notes:
+            self.notes.remove((beat, beat + 1, pitch))
+
         self.Refresh()
 
     def on_left_up(self, event):
@@ -111,6 +121,8 @@ class PianoRollPanel(wx.Panel):
 
     def on_resize(self, event):
         self.Refresh()
+
+
 
 if __name__ == "__main__":
     app = wx.App(False)
