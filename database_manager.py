@@ -60,6 +60,5 @@ class Database_Manager:
 
         self.conn.commit()
 
-
     def close_connection(self):
         self.conn.close()

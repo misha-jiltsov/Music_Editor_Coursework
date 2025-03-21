@@ -271,7 +271,6 @@ class MIDIManager:
         self.ticks_per_beat = 480
         self.bpm = 120
 
-
     def play_notes(self, notes, instrument=0, midi_port = None):
         try:
             with mido.open_output() as output:
@@ -295,7 +294,7 @@ class MIDIManager:
                         time.sleep(0.001)
                     output.send(Message(event_type, note=pitch, velocity=velocity))
         except Exception as e:
-            messagebox.showerror(f"Error: {e}")
+            pymsgbox.alert(f"Error {e}", "Error")
 
     def export(self, notes, instrument=0, bpm=120):
 
@@ -308,7 +307,7 @@ class MIDIManager:
         )
 
         if not filename:
-            pymsgbox.alert("Error","Save Cancelled")
+            pymsgbox.alert("Save Cancelled", "Error")
             return
 
         mid = mido.MidiFile(ticks_per_beat=self.ticks_per_beat)
@@ -337,7 +336,7 @@ class MIDIManager:
             track.append(mido.Message('note_off', note=pitch + 21, velocity=0, time=duration_tick))
 
         mid.save(filename)
-        pymsgbox.alert("Info",f"Exported to {filename} with instrument {instrument}")
+        pymsgbox.alert(f"Exported to {filename} with instrument {instrument}", "Info")
 
 
 

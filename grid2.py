@@ -107,7 +107,6 @@ class PianoRollPanel(wx.Panel):
     def on_resize(self, event):
         self.Refresh()
 
-
 if __name__ == "__main__":
     app = wx.App(False)
     frame = wx.Frame(None, title="Piano Roll")

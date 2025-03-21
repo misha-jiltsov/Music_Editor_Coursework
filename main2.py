@@ -149,10 +149,9 @@ class DAWFrame(wx.Frame):
     def on_load_button(self, event):
         if self.recent_filepath!=None:
             try:
-                print(self.recent_filepath[0][0])
                 self.load_saved_track(event, filepath=self.recent_filepath[0][0])
             except:
-                print("error loading file")
+                pymsgbox.alert(f"Error Loading Recent File", "Error")
 
     def on_item_selected(self, event):
         selected_index = self.recent_files_list.GetFirstSelected()
@@ -162,22 +161,13 @@ class DAWFrame(wx.Frame):
             self.recent_filepath = self.database_manager.get_path_from_name(filename)
         event.Skip()
 
-    def on_print_selected_item(self, event):
-        selected_item = self.item_list.GetStringSelection()
-        if selected_item:
-            print(f"Selected Item: {selected_item}")
-        else:
-            print("No item selected.")
-
     def play_current_track(self, event):
         instrument = self.item_list.GetStringSelection()
         self.refresh_clean_notes()
-        print(self.playable_notes)
         if instrument:
-            print(self.piano_roll_panel.notes, self.instruments.index(instrument))
             self.Music_Player.play_notes(self.playable_notes, self.instruments.index(instrument))
         else:
-            pymsgbox.alert("Error","No Instrument Selected")
+            pymsgbox.alert("No Instrument Selected", "Error")
 
     def show_all_notes_terminal(self, event):
         print("All notes in Piano Roll:")
@@ -200,7 +190,7 @@ class DAWFrame(wx.Frame):
             duration = int(self.duration_input.GetValue())
             pitch = int(self.pitch_input.GetValue())
         except ValueError:
-            pymsgbox.alert("Error","Invalid Input")
+            pymsgbox.alert("Invalid Input", "Error")
             return
         end_beat = start_beat + duration
         self.piano_roll_panel.notes.append((start_beat, end_beat, pitch))
@@ -228,7 +218,7 @@ class DAWFrame(wx.Frame):
         )
 
         if not file_path: # does not continue if user does not select file, prevents errors
-            pymsgbox.alert("Error","Canceled Save")
+            pymsgbox.alert("Canceled Save", "Error")
             return
 
         with open(file_path, "w") as save_file:
@@ -251,7 +241,7 @@ class DAWFrame(wx.Frame):
             )
 
             if not filepath:
-                pymsgbox.alert("Error","Canceled Loading File")
+                pymsgbox.alert("Canceled Loading File", "Error")
                 return
 
 
