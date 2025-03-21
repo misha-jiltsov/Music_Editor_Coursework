@@ -3,7 +3,7 @@ from grid2 import PianoRollPanel
 from music_manager import MIDIManager
 import json
 import tkinter as tk
-from tkinter import filedialog, messagebox
+from tkinter import filedialog
 from database_manager import Database_Manager
 import pymsgbox
 
@@ -17,6 +17,7 @@ class DAWFrame(wx.Frame):
         with open("INSTRUMENTS.txt", "r") as f:
             for line in f.readlines():
                 self.instruments.append(line.strip())
+
 
         self.Music_Player = MIDIManager()
         self.database_manager = Database_Manager()
@@ -165,6 +166,7 @@ class DAWFrame(wx.Frame):
         instrument = self.item_list.GetStringSelection()
         self.refresh_clean_notes()
         if instrument:
+            self.piano_roll_panel.start_timer()
             self.Music_Player.play_notes(self.playable_notes, self.instruments.index(instrument))
         else:
             pymsgbox.alert("No Instrument Selected", "Error")
@@ -244,7 +246,6 @@ class DAWFrame(wx.Frame):
                 pymsgbox.alert("Canceled Loading File", "Error")
                 return
 
-
         with open(filepath, "r") as loaded_file:
             loaded_data = json.load(loaded_file)
 
@@ -268,9 +269,6 @@ class DAWFrame(wx.Frame):
 
     def update_database(self, filename, filepath):
         self.database_manager.update_data(filename, filepath)
-
-
-
 
 
 if __name__ == "__main__":

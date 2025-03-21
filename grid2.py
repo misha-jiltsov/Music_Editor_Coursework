@@ -1,3 +1,4 @@
+import time
 import wx
 
 class PianoRollPanel(wx.Panel):
@@ -9,6 +10,9 @@ class PianoRollPanel(wx.Panel):
         self.num_beats = num_beats
         self.num_notes = num_notes
         self.delete_note = False
+
+
+
 
         # Set a minimum size for the panel based on beats and notes
         self.SetMinSize((self.beat_width * self.num_beats + 40, self.note_height * self.num_notes))
@@ -29,13 +33,14 @@ class PianoRollPanel(wx.Panel):
         dc = wx.PaintDC(self)
         self.draw_piano_roll(dc)
 
+
     def draw_piano_roll(self, dc):
         dc.SetBrush(wx.Brush(wx.Colour(255, 255, 255)))
+
         for note in range(self.num_notes):
             y = note * self.note_height
             pitch = self.num_notes - (y // self.note_height) - 1
             dc.DrawRectangle(0, y, 40, self.note_height)
-            # dc.DrawText(self.get_Note_Name_from_pitch(pitch), 0, y)
             dc.DrawText(str(self.get_Note_Name_from_pitch(pitch+39)), 0, y)
 
         dc.SetPen(wx.Pen(wx.Colour(100, 100, 100), 1))
