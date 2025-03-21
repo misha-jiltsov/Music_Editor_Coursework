@@ -1,10 +1,9 @@
-import heapq
-
 import mido
 import time
 import tkinter as tk
-from tkinter import filedialog
+from tkinter import filedialog, messagebox
 from mido import Message
+import pymsgbox
 
 class MIDIManager:
     def __init__(self):
@@ -296,7 +295,7 @@ class MIDIManager:
                         time.sleep(0.001)
                     output.send(Message(event_type, note=pitch, velocity=velocity))
         except Exception as e:
-            print(f"Error: {e}")
+            messagebox.showerror(f"Error: {e}")
 
     def export(self, notes, instrument=0, bpm=120):
 
@@ -309,7 +308,7 @@ class MIDIManager:
         )
 
         if not filename:
-            print("Save canceled.")
+            pymsgbox.alert("Error","Save Cancelled")
             return
 
         mid = mido.MidiFile(ticks_per_beat=self.ticks_per_beat)
@@ -338,7 +337,7 @@ class MIDIManager:
             track.append(mido.Message('note_off', note=pitch + 21, velocity=0, time=duration_tick))
 
         mid.save(filename)
-        print(f"Exported to {filename} with instrument {instrument}")
+        pymsgbox.alert("Info",f"Exported to {filename} with instrument {instrument}")
 
 
 

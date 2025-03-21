@@ -3,15 +3,16 @@ from grid2 import PianoRollPanel
 from music_manager import MIDIManager
 import json
 import tkinter as tk
-from tkinter import filedialog
+from tkinter import filedialog, messagebox
 from database_manager import Database_Manager
+import pymsgbox
 
 class DAWFrame(wx.Frame):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.SetTitle("DAW")
-        self.SetSize((1500, 920))
+        self.SetSize((1650, 920))
         self.instruments = []
         with open("INSTRUMENTS.txt", "r") as f:
             for line in f.readlines():
@@ -21,11 +22,12 @@ class DAWFrame(wx.Frame):
         self.database_manager = Database_Manager()
 
         self.shift_start_time = False
+        self.recent_filepath = None
 
         panel = wx.Panel(self)
         main_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
-        left_panel = wx.Panel(panel, size=(200, -1))
+        left_panel = wx.Panel(panel, size=(350, -1))
         left_sizer = wx.BoxSizer(wx.VERTICAL)
 
         self.item_list = wx.ListBox(left_panel, choices=self.instruments, style=wx.LB_SINGLE)
@@ -35,7 +37,17 @@ class DAWFrame(wx.Frame):
         self.recent_files_list.InsertColumn(0, 'Filename', width=200)
         self.recent_files_list.InsertColumn(1, 'Date Created', width=150)
 
+        self.recent_files_list.Bind(wx.EVT_LIST_ITEM_SELECTED, self.on_item_selected)
+
+        self.database_manager.check_files_exists_remove_missing()
+        self.update_recent_files()
+
+        load_from_recent_button = wx.Button(left_panel, label="Load File")
+
         left_sizer.Add(self.recent_files_list)
+        left_sizer.Add(load_from_recent_button, 0, wx.EXPAND | wx.ALL, 5)
+
+        load_from_recent_button.Bind(wx.EVT_BUTTON, self.on_load_button)
 
         left_panel.SetSizer(left_sizer)
 
@@ -117,6 +129,8 @@ class DAWFrame(wx.Frame):
 
         self.playable_notes = []
 
+
+
     def export_track(self, event):
         self.refresh_clean_notes()
         instrument = self.item_list.GetStringSelection()
@@ -131,6 +145,22 @@ class DAWFrame(wx.Frame):
     def clear_track(self, event):
         self.piano_roll_panel.notes = []
         self.piano_roll_panel.Refresh()
+
+    def on_load_button(self, event):
+        if self.recent_filepath!=None:
+            try:
+                print(self.recent_filepath[0][0])
+                self.load_saved_track(event, filepath=self.recent_filepath[0][0])
+            except:
+                print("error loading file")
+
+    def on_item_selected(self, event):
+        selected_index = self.recent_files_list.GetFirstSelected()
+
+        if selected_index != -1:  # Check if an item is selected
+            filename = self.recent_files_list.GetItemText(selected_index, 0)
+            self.recent_filepath = self.database_manager.get_path_from_name(filename)
+        event.Skip()
 
     def on_print_selected_item(self, event):
         selected_item = self.item_list.GetStringSelection()
@@ -147,7 +177,7 @@ class DAWFrame(wx.Frame):
             print(self.piano_roll_panel.notes, self.instruments.index(instrument))
             self.Music_Player.play_notes(self.playable_notes, self.instruments.index(instrument))
         else:
-            print("No instrument selected.")
+            pymsgbox.alert("Error","No Instrument Selected")
 
     def show_all_notes_terminal(self, event):
         print("All notes in Piano Roll:")
@@ -163,7 +193,6 @@ class DAWFrame(wx.Frame):
             volume = int(self.volume_input.GetValue())
             pitch = note[2]
             self.playable_notes.append((duration, start_time, volume, pitch+39))
-        print("playable notes" , self.playable_notes)
 
     def on_add_note(self, event):
         try:
@@ -171,7 +200,7 @@ class DAWFrame(wx.Frame):
             duration = int(self.duration_input.GetValue())
             pitch = int(self.pitch_input.GetValue())
         except ValueError:
-            print("Invalid input")
+            pymsgbox.alert("Error","Invalid Input")
             return
         end_beat = start_beat + duration
         self.piano_roll_panel.notes.append((start_beat, end_beat, pitch))
@@ -192,38 +221,41 @@ class DAWFrame(wx.Frame):
 
         file_selection = tk.Tk()
         file_selection.withdraw()  # hides the main tkinter windows
-        filename = filedialog.asksaveasfilename(
+        file_path = filedialog.asksaveasfilename(
             defaultextension=".json",
-            filetypes=[("JSON Files", "*.json")],
-            title="Save Track Layout"
+            filetypes=[("JSON Files", "*.json")], # defaults for the file explorer window,
+            title="Save Track Layout"             # makes sure user file selection is correct
         )
 
-        if not filename:
-            print("Save canceled.")
+        if not file_path: # does not continue if user does not select file, prevents errors
+            pymsgbox.alert("Error","Canceled Save")
             return
 
-        with open(filename, "w") as save_file:
-            json.dump(note_dict, save_file, indent=4)
+        with open(file_path, "w") as save_file:
+            json.dump(note_dict, save_file, indent=4)  #exports the dictionaty of notes into a file
+
+        filename = file_path.split("/")[-1]
+
+        self.update_database(filename, file_path)
+        self.update_recent_files()
+
+    def load_saved_track(self, event, filepath=None):
+
+        if filepath == None:
+            file_selection = tk.Tk()
+            file_selection.withdraw()
+            filepath = filedialog.askopenfilename(
+                defaultextension=".json",
+                filetypes=[("JSON Files", "*.json")],
+                title="Open Saved Track"
+            )
+
+            if not filepath:
+                pymsgbox.alert("Error","Canceled Loading File")
+                return
 
 
-
-    def load_saved_track(self, event):
-
-        file_selection = tk.Tk()
-        file_selection.withdraw()
-        filename = filedialog.askopenfilename(
-            defaultextension=".json",
-            filetypes=[("JSON Files", "*.json")],
-            title="Open Saved Track"
-        )
-
-
-        if not filename:
-            print("Save canceled.")
-            return
-
-
-        with open(filename, "r") as loaded_file:
+        with open(filepath, "r") as loaded_file:
             loaded_data = json.load(loaded_file)
 
         self.piano_roll_panel.notes = []
@@ -235,17 +267,18 @@ class DAWFrame(wx.Frame):
         self.piano_roll_panel.Refresh()
 
     def update_recent_files(self):
-        recent_files = self.database_manager.get_recent_tracks(10)
 
+        recent_files = self.database_manager.get_recent_tracks(5)
+        self.database_manager.check_files_exists_remove_missing()
         self.recent_files_list.DeleteAllItems()
 
-        for idx, (filename, date_created) in enumerate(recent_files):
-            self.recent_files_list.InsertItem(idx, filename)
-            self.recent_files_list.SetItem(idx, 1, date_created)
+        for id, (filename, date_created) in enumerate(recent_files):
+            self.recent_files_list.InsertItem(id, filename)
+            self.recent_files_list.SetItem(id, 1, date_created)
 
     def update_database(self, filename, filepath):
+        self.database_manager.update_data(filename, filepath)
 
-        self.database_manager.update_data()
 
 
 

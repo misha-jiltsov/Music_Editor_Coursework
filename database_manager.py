@@ -1,5 +1,7 @@
 import sqlite3
 from datetime import datetime
+import os
+
 class Database_Manager:
     def __init__(self):
         self.conn = sqlite3.connect("main_database.db")
@@ -36,6 +38,28 @@ class Database_Manager:
 (amount,))
         return self.cursor.fetchall()
 
+    def get_path_from_name(self, filename):
+        self.cursor.execute("""
+                SELECT filepath FROM saved_files
+                WHERE filename = ?
+                """, (filename,))
+
+        return self.cursor.fetchall()
+
+    def check_files_exists_remove_missing(self):
+        self.cursor.execute("""
+                SELECT id, filepath FROM saved_files
+                """)
+        data = self.cursor.fetchall()
+
+        for file in data:
+            if not os.path.exists(file[1]):
+                self.cursor.execute("""
+                DELETE FROM saved_files WHERE id = ?;
+                """, (file[0],))
+
+        self.conn.commit()
+
+
     def close_connection(self):
         self.conn.close()
-
