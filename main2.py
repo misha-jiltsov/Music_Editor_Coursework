@@ -1,6 +1,10 @@
 import wx
 from grid2 import PianoRollPanel
 from music_manager import MIDIManager
+import json
+import tkinter as tk
+from tkinter import filedialog
+from database_manager import Database_Manager
 
 class DAWFrame(wx.Frame):
     def __init__(self, *args, **kwargs):
@@ -14,17 +18,25 @@ class DAWFrame(wx.Frame):
                 self.instruments.append(line.strip())
 
         self.Music_Player = MIDIManager()
+        self.database_manager = Database_Manager()
+
         self.shift_start_time = False
 
         panel = wx.Panel(self)
         main_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
-        # Left panel: Instrument selection
         left_panel = wx.Panel(panel, size=(200, -1))
         left_sizer = wx.BoxSizer(wx.VERTICAL)
 
         self.item_list = wx.ListBox(left_panel, choices=self.instruments, style=wx.LB_SINGLE)
         left_sizer.Add(self.item_list, 1, wx.EXPAND | wx.ALL, 5)
+
+        self.recent_files_list = wx.ListCtrl(left_panel, style=wx.LC_REPORT)
+        self.recent_files_list.InsertColumn(0, 'Filename', width=200)
+        self.recent_files_list.InsertColumn(1, 'Date Created', width=150)
+
+        left_sizer.Add(self.recent_files_list)
+
         left_panel.SetSizer(left_sizer)
 
         main_sizer.Add(left_panel, 0, wx.EXPAND | wx.ALL, 5)
@@ -37,22 +49,22 @@ class DAWFrame(wx.Frame):
         controls_box = wx.StaticBox(right_panel, label="Controls")
         controls_panel = wx.StaticBoxSizer(controls_box, wx.HORIZONTAL)
         play_button = wx.Button(right_panel, label="Play")
-        pause_button = wx.Button(right_panel, label="Pause")
-        stop_button = wx.Button(right_panel, label="Stop")
         get_data_button = wx.Button(right_panel, label="Get all data")
         clear_board_button = wx.Button(right_panel, label="Clear Track")
         export_button = wx.Button(right_panel, label="Export Track")
+        save_track_button = wx.Button(right_panel, label="Save Track")
+        load_track_button = wx.Button(right_panel, label="Load Existing Track")
         self.checkbox = wx.CheckBox(right_panel, label="Shift Note Start time")
         self.checkbox.Bind(wx.EVT_CHECKBOX, self.on_time_checkbox_toggle)
         self.remove_note_toggle = wx.CheckBox(right_panel, label="Remove Note")
         self.remove_note_toggle.Bind(wx.EVT_CHECKBOX, self.on_remove_checkbox_toggle)
 
         controls_panel.Add(play_button, 0, wx.ALL, 5)
-        controls_panel.Add(pause_button, 0, wx.ALL, 5)
-        controls_panel.Add(stop_button, 0, wx.ALL, 5)
         controls_panel.Add(get_data_button, 0, wx.ALL, 5)
         controls_panel.Add(clear_board_button, 0, wx.ALL, 5)
         controls_panel.Add(export_button, 0, wx.ALL, 5)
+        controls_panel.Add(save_track_button, 0, wx.ALL, 5)
+        controls_panel.Add(load_track_button, 0, wx.ALL, 5)
         controls_panel.Add(self.checkbox, 0, wx.ALL, 8)
         controls_panel.Add(self.remove_note_toggle, 0, wx.ALL, 8)
 
@@ -62,6 +74,8 @@ class DAWFrame(wx.Frame):
         get_data_button.Bind(wx.EVT_BUTTON, self.show_all_notes_terminal)
         clear_board_button.Bind(wx.EVT_BUTTON, self.clear_track)
         export_button.Bind(wx.EVT_BUTTON, self.export_track)
+        save_track_button.Bind(wx.EVT_BUTTON, self.save_track_to_file)
+        load_track_button.Bind(wx.EVT_BUTTON, self.load_saved_track)
         right_sizer.Add(controls_panel, 0, wx.EXPAND | wx.ALL, 5)
 
         # Piano Roll Grid section
@@ -149,6 +163,7 @@ class DAWFrame(wx.Frame):
             volume = int(self.volume_input.GetValue())
             pitch = note[2]
             self.playable_notes.append((duration, start_time, volume, pitch+39))
+        print("playable notes" , self.playable_notes)
 
     def on_add_note(self, event):
         try:
@@ -164,6 +179,74 @@ class DAWFrame(wx.Frame):
         if self.shift_start_time:
             new_start = start_beat + duration
             self.time_input.SetValue(str(new_start))
+
+    def save_track_to_file(self, event):
+        note_dict = {}
+        self.refresh_clean_notes()
+
+        for note_id, note in enumerate(self.piano_roll_panel.notes):
+            start_beat, end_beat, pitch = note
+            note_dict[note_id] = {"start_beat": start_beat,
+                                  "end_beat": end_beat,
+                                  "pitch": pitch}
+
+        file_selection = tk.Tk()
+        file_selection.withdraw()  # hides the main tkinter windows
+        filename = filedialog.asksaveasfilename(
+            defaultextension=".json",
+            filetypes=[("JSON Files", "*.json")],
+            title="Save Track Layout"
+        )
+
+        if not filename:
+            print("Save canceled.")
+            return
+
+        with open(filename, "w") as save_file:
+            json.dump(note_dict, save_file, indent=4)
+
+
+
+    def load_saved_track(self, event):
+
+        file_selection = tk.Tk()
+        file_selection.withdraw()
+        filename = filedialog.askopenfilename(
+            defaultextension=".json",
+            filetypes=[("JSON Files", "*.json")],
+            title="Open Saved Track"
+        )
+
+
+        if not filename:
+            print("Save canceled.")
+            return
+
+
+        with open(filename, "r") as loaded_file:
+            loaded_data = json.load(loaded_file)
+
+        self.piano_roll_panel.notes = []
+
+        for i in range(len(loaded_data)):
+            self.piano_roll_panel.notes.append(tuple([int(x) for x in loaded_data[str(i)].values()]))
+
+        self.refresh_clean_notes()
+        self.piano_roll_panel.Refresh()
+
+    def update_recent_files(self):
+        recent_files = self.database_manager.get_recent_tracks(10)
+
+        self.recent_files_list.DeleteAllItems()
+
+        for idx, (filename, date_created) in enumerate(recent_files):
+            self.recent_files_list.InsertItem(idx, filename)
+            self.recent_files_list.SetItem(idx, 1, date_created)
+
+    def update_database(self, filename, filepath):
+
+        self.database_manager.update_data()
+
 
 
 

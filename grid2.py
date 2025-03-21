@@ -25,7 +25,6 @@ class PianoRollPanel(wx.Panel):
         self.Bind(wx.EVT_SIZE, self.on_resize)
 
 
-
     def on_paint(self, event):
         dc = wx.PaintDC(self)
         self.draw_piano_roll(dc)
@@ -88,7 +87,6 @@ class PianoRollPanel(wx.Panel):
             pitch = self.num_notes - (pos.y // self.note_height) - 1
             if (beat, beat+1, pitch) in self.notes:
                 self.notes.remove((beat, beat+1, pitch))
-        print(self.notes, self.delete_note)
         self.Refresh()
 
     def on_left_up(self, event):

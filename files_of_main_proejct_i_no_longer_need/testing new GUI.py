@@ -11,7 +11,7 @@ class DAWApp(wx.Frame):
         main_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         self.instruments = []
-        with open("INSTRUMENTS.txt", "r") as f:
+        with open("../INSTRUMENTS.txt", "r") as f:
             for line in f.readlines():
                 self.instruments.append(line.strip())
 

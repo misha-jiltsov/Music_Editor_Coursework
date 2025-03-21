@@ -271,92 +271,7 @@ class MIDIManager:
 
         self.ticks_per_beat = 480
         self.bpm = 120
-    # def play_notes(self, notes, instrument):
-    #     try:
-    #         with mido.open_output() as midi_out:
-    #             program_number = print(self.INSTRUMENTS_REVERSED[instrument])
-    #             midi_out.send(mido.Message('program_change', program=program_number))
-    #
-    #             for (duration, start_time, volume, pitch) in notes:
-    #                 midi_note = int(69 + 12 * math.log2(pitch / 440.0))
-    #                 midi_note = max(0, min(127, midi_note))
-    #
-    #                 midi_velocity = max(0, min(127, int((volume + 100) / 2)))
-    #
-    #                 time.sleep(start_time / 1000)
-    #                 midi_out.send(mido.Message('note_on', note=midi_note, velocity=midi_velocity))
-    #
-    #                 time.sleep(duration / 1000)
-    #                 midi_out.send(mido.Message('note_off', note=midi_note))
-    #     except Exception as e:
-    #         print("Error", f"Failed to play notes: {e}")
-    # def play_notes(self, notes, instrument):
-    #     try:
-    #         with mido.open_output() as midi_out:
-    #             # Convert instrument index to program number
-    #             program_number = instrument if isinstance(instrument, int) else self.INSTRUMENTS_REVERSED[instrument]
-    #             midi_out.send(mido.Message('program_change', program=program_number))
-    #
-    #             for (duration, start_time, volume, pitch) in notes:
-    #                 # Use pitch directly if it's a MIDI note number
-    #                 midi_note = int(pitch)
-    #
-    #                 # Scale volume to MIDI velocity range
-    #                 midi_velocity = max(0, min(127, int((volume + 100) / 2)))
-    #
-    #                 time.sleep(start_time / 1000)
-    #                 midi_out.send(mido.Message('note_on', note=midi_note, velocity=midi_velocity))
-    #
-    #                 time.sleep(duration / 1000)
-    #                 midi_out.send(mido.Message('note_off', note=midi_note))
-    #     except Exception as e:
-    #         print(f"Error: Failed to play notes: {e}")
 
-    # def play_notes(self, notes, instrument):
-    #     try:
-    #         with mido.open_output() as midi_out:
-    #             # Convert instrument index to program number
-    #             program_number = instrument if isinstance(instrument, int) else self.INSTRUMENTS_REVERSED[instrument]
-    #             midi_out.send(mido.Message('program_change', program=program_number))
-    #
-    #             # Sort notes by start_time to play them in order
-    #             notes.sort(key=lambda n: n[1])  # Sort by start_time
-    #
-    #             start_time = time.time()  # Get the reference start time
-    #
-    #             active_notes = []  # Track active notes for stopping them later
-    #
-    #             for (duration, start_time_ms, volume, pitch) in notes:
-    #                 # Calculate when this note should start
-    #                 note_start_time = start_time + (start_time_ms / 1000.0)
-    #
-    #                 # Wait until it's time to play this note
-    #                 while time.time() < note_start_time:
-    #                     time.sleep(0.001)  # Sleep for a very short time to stay responsive
-    #
-    #                 # Convert pitch directly if it's a MIDI note number
-    #                 midi_note = int(pitch)
-    #                 midi_velocity = max(0, min(127, int((volume + 100) / 2)))  # Scale volume
-    #
-    #                 # Play the note
-    #                 midi_out.send(mido.Message('note_on', note=midi_note, velocity=midi_velocity))
-    #                 active_notes.append((midi_note, time.time() + (duration / 1000.0)))  # Store end time
-    #
-    #                 # Stop notes that should end
-    #                 new_active_notes = []
-    #                 for note, end_time in active_notes:
-    #                     if time.time() >= end_time:
-    #                         midi_out.send(mido.Message('note_off', note=note))
-    #                     else:
-    #                         new_active_notes.append((note, end_time))
-    #                 active_notes = new_active_notes
-    #
-    #             # Ensure all remaining notes are stopped
-    #             for note, _ in active_notes:
-    #                 midi_out.send(mido.Message('note_off', note=note))
-    #
-    #     except Exception as e:
-    #         print(f"Error: Failed to play notes: {e}")
 
     def play_notes(self, notes, instrument=0, midi_port = None):
         try:
@@ -419,20 +334,12 @@ class MIDIManager:
             delta_time = start_tick - last_time
             last_time = start_tick
 
-            # Note On
             track.append(mido.Message('note_on', note=pitch + 21, velocity=volume, time=delta_time))
-            # Note Off
             track.append(mido.Message('note_off', note=pitch + 21, velocity=0, time=duration_tick))
 
-        # Save the MIDI file
         mid.save(filename)
         print(f"Exported to {filename} with instrument {instrument}")
 
-# [(400, 0, -10, 440),(400, 400, -10, 494),(400, 800, -10, 523),(400, 1200, -10, 440)]
 
-#[(400, 0, 64, 69), (400, 400, 64, 71), (400, 800, 64, 72), (400, 1200, 64, 69)]
-#
-# testthing =  MIDIManager()
-# testthing.play_notes([(400, 0, 64, 69), (400, 400, 64, 71), (400, 800, 64, 72), (400, 1200, 64, 69)], 0)
 
 
